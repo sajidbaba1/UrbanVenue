@@ -31,28 +31,28 @@ export default function AddVenuePage() {
     pricePerHour: '',
     type: 'Marriage Hall',
     amenities: [] as string[],
-    addons: [] as { name: string; price: string; priceType: string }[]
+    addons: [] as { name: string; price: number; priceType: string; description: string }[]
   });
 
   const amenitiesList = ['WiFi', 'Parking', 'AC', 'Power Backup', 'CCTV', 'Sound System', 'Changing Rooms'];
   const venueTypes = ['Marriage Hall', 'Party Garden', 'Conference Room', 'Rooftop', 'Studio'];
 
-  const handleAddAddon = () => {
+  const addAddon = () => {
     setFormData({
       ...formData,
-      addons: [...formData.addons, { name: '', price: '', priceType: 'fixed' }]
+      addons: [...formData.addons, { name: '', price: 0, priceType: 'fixed', description: '' }]
     });
   };
 
-  const handleRemoveAddon = (index: number) => {
+  const updateAddon = (index: number, field: string, value: any) => {
     const newAddons = [...formData.addons];
-    newAddons.splice(index, 1);
+    newAddons[index] = { ...newAddons[index], [field]: value };
     setFormData({ ...formData, addons: newAddons });
   };
 
-  const handleAddonUpdate = (index: number, field: string, value: string) => {
+  const removeAddon = (index: number) => {
     const newAddons = [...formData.addons];
-    newAddons[index] = { ...newAddons[index], [field]: value };
+    newAddons.splice(index, 1);
     setFormData({ ...formData, addons: newAddons });
   };
 
@@ -61,16 +61,15 @@ export default function AddVenuePage() {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.post('http://localhost:5000/api/venues', formData, {
-        headers: {
-            Authorization: `Bearer ${token}`
-        }
+      await axios.post('http://localhost:5000/api/venues', formData, {
+        headers: { Authorization: `Bearer ${token}` }
       });
       alert('Venue created successfully!');
       router.push('/dashboard/owner');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to create venue', err);
-      alert('Error creating venue. Make sure you are logged in as an Owner.');
+      const msg = err.response?.data?.message || 'Error creating venue. Make sure you are logged in as an Owner.';
+      alert(msg);
     } finally {
       setLoading(false);
     }
@@ -174,11 +173,23 @@ export default function AddVenuePage() {
             </div>
           </div>
 
-          {/* Section 2: Ameneties */}
+          <div className="space-y-6">
+             <label className="text-xs font-bold text-neutral-500 uppercase tracking-widest pl-1">Property Description</label>
+             <textarea 
+                required
+                placeholder="Give a beautiful description of your venue, highlighting why it's perfect for events..."
+                rows={4}
+                value={formData.description}
+                onChange={(e) => setFormData({...formData, description: e.target.value})}
+                className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 focus:border-indigo-600 outline-none transition-all resize-none"
+             />
+          </div>
+
+          {/* Section 2: Amenities */}
           <div className="p-8 rounded-3xl bg-white/5 border border-white/10">
             <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
               <Sparkles size={20} className="text-indigo-500" />
-              Ameneties Provided
+              Amenities Provided
             </h2>
             <div className="flex flex-wrap gap-3">
               {amenitiesList.map(amenity => (
@@ -192,11 +203,10 @@ export default function AddVenuePage() {
                   }}
                   className={`px-6 py-3 rounded-xl border cursor-pointer transition-all font-medium text-sm flex items-center gap-2 ${
                     formData.amenities.includes(amenity)
-                    ? 'bg-indigo-600 border-indigo-600 text-white'
+                    ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-600/20'
                     : 'bg-white/5 border-white/10 text-neutral-400 hover:border-white/20'
                   }`}
                 >
-                  {formData.amenities.includes(amenity) && <CheckCircle size={14} />}
                   {amenity}
                 </div>
               ))}
@@ -236,68 +246,68 @@ export default function AddVenuePage() {
             </div>
 
             {/* Dynamic Add-ons */}
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-bold">Custom Service Packages</h3>
                 <button 
                   type="button"
-                  onClick={handleAddAddon}
-                  className="bg-white/10 hover:bg-white/20 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-all"
+                  onClick={addAddon}
+                  className="bg-white text-black px-6 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-all hover:bg-neutral-200"
                 >
                   <Plus size={16} />
                   Add Package
                 </button>
               </div>
 
-              <div className="space-y-3">
-                <AnimatePresence>
+              <div className="space-y-4">
+                <AnimatePresence mode='popLayout'>
                   {formData.addons.map((addon, index) => (
                     <motion.div 
                       key={index}
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.95 }}
-                      className="grid grid-cols-1 md:grid-cols-12 gap-3 bg-white/5 p-4 rounded-2xl border border-white/10 items-end"
+                      className="grid grid-cols-1 md:grid-cols-12 gap-4 bg-white/5 p-6 rounded-[32px] border border-white/10 items-end shadow-xl shadow-black/20"
                     >
-                      <div className="md:col-span-6 space-y-1">
-                        <label className="text-[10px] font-bold text-neutral-500 uppercase">Package Name</label>
+                      <div className="md:col-span-5 space-y-2">
+                        <label className="text-[10px] font-black text-neutral-500 uppercase tracking-widest pl-1">Service Name</label>
                         <input 
                           type="text" 
                           placeholder="e.g. Deluxe Catering (100 Guests)"
                           value={addon.name}
-                          onChange={(e) => handleAddonUpdate(index, 'name', e.target.value)}
-                          className="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm focus:border-indigo-600 outline-none"
+                          onChange={(e) => updateAddon(index, 'name', e.target.value)}
+                          className="w-full bg-neutral-900 border border-white/5 rounded-2xl p-4 text-sm focus:border-indigo-600 outline-none transition-colors"
                         />
                       </div>
-                      <div className="md:col-span-3 space-y-1">
-                        <label className="text-[10px] font-bold text-neutral-500 uppercase">Price (₹)</label>
+                      <div className="md:col-span-3 space-y-2">
+                        <label className="text-[10px] font-black text-neutral-500 uppercase tracking-widest pl-1">Rate (₹)</label>
                         <input 
                           type="number" 
                           placeholder="0"
                           value={addon.price}
-                          onChange={(e) => handleAddonUpdate(index, 'price', e.target.value)}
-                          className="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm focus:border-indigo-600 outline-none"
+                          onChange={(e) => updateAddon(index, 'price', e.target.value)}
+                          className="w-full bg-neutral-900 border border-white/5 rounded-2xl p-4 text-sm focus:border-indigo-600 outline-none transition-colors"
                         />
                       </div>
-                      <div className="md:col-span-2 space-y-1">
-                        <label className="text-[10px] font-bold text-neutral-500 uppercase">Unit</label>
+                      <div className="md:col-span-3 space-y-2">
+                        <label className="text-[10px] font-black text-neutral-500 uppercase tracking-widest pl-1">Payment Basis</label>
                         <select 
                           value={addon.priceType}
-                          onChange={(e) => handleAddonUpdate(index, 'priceType', e.target.value)}
-                          className="w-full bg-black/40 border border-white/5 rounded-xl p-3 text-sm focus:border-indigo-600 outline-none"
+                          onChange={(e) => updateAddon(index, 'priceType', e.target.value)}
+                          className="w-full bg-neutral-900 border border-white/5 rounded-2xl p-4 text-sm focus:border-indigo-600 outline-none appearance-none cursor-pointer"
                         >
-                          <option value="fixed" className="bg-neutral-900">Fixed</option>
-                          <option value="per_guest" className="bg-neutral-900">Per Guest</option>
-                          <option value="hourly" className="bg-neutral-900">Hourly</option>
+                          <option value="fixed">Fixed Rate</option>
+                          <option value="per_guest">Per Guest</option>
+                          <option value="hourly">Per Hour</option>
                         </select>
                       </div>
                       <div className="md:col-span-1 flex justify-end">
                         <button 
                           type="button"
-                          onClick={() => handleRemoveAddon(index)}
-                          className="w-11 h-11 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-xl flex items-center justify-center transition-all"
+                          onClick={() => removeAddon(index)}
+                          className="w-12 h-12 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-2xl flex items-center justify-center transition-all shadow-lg active:scale-90"
                         >
-                          <Trash2 size={18} />
+                          <Trash2 size={20} />
                         </button>
                       </div>
                     </motion.div>
@@ -305,38 +315,31 @@ export default function AddVenuePage() {
                 </AnimatePresence>
                 
                 {formData.addons.length === 0 && (
-                  <div className="text-center py-8 border-2 border-dashed border-white/5 rounded-3xl text-neutral-600">
-                    <Package size={32} className="mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">No extra service packages added yet.</p>
+                  <div className="text-center py-12 border-2 border-dashed border-white/5 rounded-[40px] text-neutral-600">
+                    <Package size={40} className="mx-auto mb-3 opacity-30" />
+                    <p className="text-sm font-medium">No extra packages have been added yet.</p>
                   </div>
                 )}
               </div>
             </div>
           </div>
 
-          <div className="pt-12 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="text-neutral-500 text-sm">
-              <span className="text-indigo-400 font-bold">Quick Tip:</span> Venues with at least 2 packages get booked 3x more often.
+          <div className="pt-12 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-8">
+            <div className="text-neutral-500 text-sm max-w-sm">
+              <span className="text-indigo-400 font-bold block mb-1">Quick Strategy Tip:</span> 
+              Venues with at least 2 service packages (like Catering or DJ) see a 300% increase in total revenue per event.
             </div>
             <button 
               type="submit" 
               disabled={loading}
-              className="w-full md:w-auto px-12 py-5 bg-white text-black hover:bg-indigo-500 hover:text-white rounded-2xl font-black text-lg transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 shadow-2xl shadow-white/5"
+              className="w-full md:w-auto px-16 py-6 bg-white text-black hover:bg-indigo-600 hover:text-white rounded-[24px] font-black text-xl transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 shadow-2xl shadow-indigo-600/10"
             >
-              {loading ? "Publishing..." : "Publish Venue"}
-              <ChevronRight size={20} />
+              {loading ? "Publishing Space..." : "Publish Listing"}
+              <ChevronRight size={24} />
             </button>
           </div>
         </form>
       </div>
     </div>
-  );
-}
-
-function CheckCircle({ size }: { size: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="20 6 9 17 4 12" />
-    </svg>
   );
 }

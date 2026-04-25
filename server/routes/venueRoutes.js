@@ -66,6 +66,8 @@ router.get('/:id', async (req, res) => {
 // Create Venue (Owner Only)
 router.post('/', auth, authorize('owner', 'admin'), async (req, res) => {
     try {
+        console.log('📥 INCOMING VENUE DATA:', req.body);
+        
         const { 
             name, description, location, address, capacity, 
             pricePerHour, type, amenities, addons 
@@ -77,17 +79,19 @@ router.post('/', auth, authorize('owner', 'admin'), async (req, res) => {
             description,
             location,
             address,
-            capacity,
-            pricePerHour,
+            capacity: Number(capacity), // Ensure Number
+            pricePerHour: Number(pricePerHour), // Ensure Number
             type,
             amenities,
-            addons, // Dynamics add-ons handled here
-            isVerified: req.user.role === 'admin' // Auto-verify if admin creates
+            addons,
+            isVerified: req.user.role === 'admin'
         });
 
-        await venue.save();
-        res.status(201).json(venue);
+        const savedVenue = await venue.save();
+        console.log('✅ VENUE SAVED:', savedVenue._id);
+        res.status(201).json(savedVenue);
     } catch (err) {
+        console.error('❌ VENUE CREATION FAILED:', err.message);
         res.status(500).json({ message: err.message });
     }
 });
