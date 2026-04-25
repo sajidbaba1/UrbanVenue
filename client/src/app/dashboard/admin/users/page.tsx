@@ -11,16 +11,12 @@ import {
   Search, 
   Shield, 
   Mail, 
-  ShieldAlert, 
   Loader2, 
   X,
   LogOut,
-  BarChart3,
   Settings,
   Zap,
-  UserPlus,
-  ArrowRight,
-  ShieldCheck
+  Star
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -33,7 +29,6 @@ export default function AdminDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [newPassword, setNewPassword] = useState('');
-  const [activeTab, setActiveTab] = useState('users');
 
   // Handle Logout
   const handleLogout = () => {
@@ -95,7 +90,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white">
-      {/* Side Navigation (Consistent Sidebar) */}
+      {/* Side Navigation (Cleaned) */}
       <div className="fixed left-0 top-0 h-full w-20 md:w-64 bg-neutral-900 border-r border-white/5 flex flex-col justify-between p-4 z-50">
         <div>
           <Link href="/" className="flex items-center gap-2 mb-12 px-2">
@@ -106,25 +101,14 @@ export default function AdminDashboard() {
           </Link>
 
           <div className="space-y-2">
-            {[
-              { id: 'users', label: 'User Directory', icon: <Users /> },
-              { id: 'venues', label: 'Venue Audit', icon: <ShieldCheck /> },
-              { id: 'analytics', label: 'Global Stats', icon: <BarChart3 /> },
-              { id: 'settings', label: 'Platform Config', icon: <Settings /> },
-            ].map((item) => (
-              <button
-                key={item.id}
-                onClick={() => setActiveTab(item.id)}
-                className={`w-full flex items-center gap-4 px-4 py-4 rounded-2xl transition-all ${
-                  activeTab === item.id 
-                  ? 'bg-rose-600 text-white shadow-xl shadow-rose-600/20' 
-                  : 'text-neutral-500 hover:bg-white/5 hover:text-white'
-                }`}
-              >
-                {item.icon}
-                <span className="hidden md:block font-bold text-sm">{item.label}</span>
-              </button>
-            ))}
+            <button className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl bg-rose-600 text-white shadow-xl shadow-rose-600/20">
+              <Users />
+              <span className="hidden md:block font-bold text-sm">User Directory</span>
+            </button>
+            <button className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl text-neutral-500 hover:bg-white/5 hover:text-white transition-all">
+              <Settings />
+              <span className="hidden md:block font-bold text-sm">Settings</span>
+            </button>
           </div>
         </div>
 
@@ -145,44 +129,45 @@ export default function AdminDashboard() {
                <Shield size={20} />
              </div>
              <div>
-               <div className="text-sm font-bold">Logged in as {user?.name}</div>
-               <div className="text-[10px] text-neutral-500 uppercase tracking-widest font-black">Platform Administrator</div>
+               <div className="text-sm font-bold">Admin: {user?.name}</div>
+               <div className="text-[10px] text-neutral-500 uppercase tracking-widest font-black">Management Mode</div>
              </div>
           </div>
 
-          <div className="flex items-center gap-6">
-            <div className="relative group hidden md:block">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 group-focus-within:text-rose-500 transition-colors" size={16} />
-              <input 
-                type="text" 
-                placeholder="Search platform users..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="bg-white/5 border border-white/10 rounded-full py-2.5 pl-12 pr-6 outline-none focus:border-rose-600 transition-all w-80 text-sm"
-              />
-            </div>
-            <button className="bg-white text-black px-5 py-2.5 rounded-full text-xs font-bold hover:bg-neutral-200 transition-colors flex items-center gap-2">
-               Export Data
-               <ArrowRight size={14} />
-            </button>
+          <div className="relative group hidden md:block">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 group-focus-within:text-rose-500 transition-colors" size={16} />
+            <input 
+              type="text" 
+              placeholder="Quick search users..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="bg-white/5 border border-white/10 rounded-full py-2.5 pl-12 pr-6 outline-none focus:border-rose-600 transition-all w-80 text-sm"
+            />
           </div>
         </header>
 
         <main className="p-8">
-          {/* Admin Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
-            {[
-              { label: 'Total Accounts', value: users.length, icon: <Users />, color: 'text-rose-500' },
-              { label: 'New This Week', value: '+12', icon: <UserPlus />, color: 'text-indigo-500' },
-              { label: 'System Health', value: '100%', icon: <ShieldCheck />, color: 'text-emerald-500' },
-              { label: 'Avg User Rating', value: '4.8', icon: <Zap />, color: 'text-amber-500' },
-            ].map((stat, i) => (
-              <div key={i} className="p-8 rounded-[32px] bg-neutral-900 border border-white/5 relative overflow-hidden group">
-                <div className={`${stat.color} mb-4`}>{stat.icon}</div>
-                <div className="text-3xl font-black mb-1">{stat.value}</div>
-                <div className="text-xs font-bold text-neutral-500 uppercase tracking-widest">{stat.label}</div>
+          {/* Core Stats Only */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+            <div className="p-8 rounded-[32px] bg-neutral-900 border border-white/5 flex items-center justify-between group">
+              <div>
+                <div className="text-3xl font-black mb-1">{users.length}</div>
+                <div className="text-xs font-bold text-neutral-500 uppercase tracking-widest">Total Active Users</div>
               </div>
-            ))}
+              <div className="w-14 h-14 bg-indigo-600/10 rounded-2xl flex items-center justify-center text-indigo-500">
+                <Users size={24} />
+              </div>
+            </div>
+            
+            <div className="p-8 rounded-[32px] bg-neutral-900 border border-white/5 flex items-center justify-between group">
+              <div>
+                <div className="text-3xl font-black mb-1">4.8</div>
+                <div className="text-xs font-bold text-neutral-500 uppercase tracking-widest">Platform Rating</div>
+              </div>
+              <div className="w-14 h-14 bg-amber-600/10 rounded-2xl flex items-center justify-center text-amber-500">
+                <Star size={24} fill="currentColor" />
+              </div>
+            </div>
           </div>
 
           <div className="flex items-center justify-between mb-8">
@@ -227,14 +212,14 @@ export default function AdminDashboard() {
                 <div className="flex items-center gap-3 w-full md:w-auto">
                   <button 
                     onClick={() => setSelectedUser(u)}
-                    className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all text-sm font-bold active:scale-95"
+                    className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-sm font-bold"
                   >
                     <Key size={16} />
                     Reset
                   </button>
                   <button 
                     onClick={() => deleteUser(u._id)}
-                    className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-red-500/10 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all text-red-500 text-sm font-bold active:scale-95"
+                    className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-red-500/10 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all text-red-500 text-sm font-bold"
                   >
                     <Trash2 size={16} />
                     Delete
@@ -246,47 +231,40 @@ export default function AdminDashboard() {
         </main>
       </div>
 
-      {/* Password Reset Modal (Same Logic, New Look) */}
+      {/* Emergency Reset Modal */}
       <AnimatePresence>
         {selectedUser && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
             <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setSelectedUser(null)}
               className="absolute inset-0 bg-black/80 backdrop-blur-md" 
             />
             <motion.div 
-              initial={{ scale: 0.95, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.95, y: 20 }}
+              initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }}
               className="relative bg-neutral-900 border border-white/10 w-full max-w-md rounded-[50px] p-12 shadow-2xl overflow-hidden"
             >
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-48 bg-rose-600/10 blur-[80px] -z-10" />
               
-              <button onClick={() => setSelectedUser(null)} className="absolute top-8 right-8 text-neutral-500 hover:text-white transition-colors">
+              <button onClick={() => setSelectedUser(null)} className="absolute top-8 right-8 text-neutral-500 hover:text-white">
                   <X size={28} />
               </button>
 
-              <h3 className="text-3xl font-black mb-2 italic uppercase tracking-tighter">Emergency Reset</h3>
+              <h3 className="text-3xl font-black mb-2 italic uppercase tracking-tighter">Force Reset</h3>
               <p className="text-neutral-500 text-sm mb-10 leading-relaxed">
-                Updating credentials for <span className="text-white font-bold">{selectedUser.name}</span>. This will invalidate their current password.
+                Updating credentials for <span className="text-white font-bold">{selectedUser.name}</span>.
               </p>
 
               <form onSubmit={updatePassword} className="space-y-6">
-                <div className="space-y-3">
-                  <label className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em] pl-1">New Administrative Password</label>
-                  <input 
-                    type="password" 
-                    required
-                    placeholder="Enter secure string"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-[24px] py-5 px-8 outline-none focus:border-rose-600 focus:bg-rose-600/5 transition-all text-sm font-medium"
-                  />
-                </div>
-                <button type="submit" className="w-full h-16 bg-rose-600 text-white rounded-[24px] font-black hover:bg-rose-500 transition-all shadow-xl shadow-rose-600/30 active:scale-95 text-lg uppercase tracking-widest">
+                <input 
+                  type="password" 
+                  required
+                  placeholder="New Administrative Password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-[24px] py-5 px-8 outline-none focus:border-rose-600 transition-all font-medium"
+                />
+                <button type="submit" className="w-full h-16 bg-rose-600 text-white rounded-[24px] font-black hover:bg-rose-500 transition-all shadow-xl shadow-rose-600/30 active:scale-95 text-lg uppercase">
                   Confirm Override
                 </button>
               </form>
