@@ -26,11 +26,14 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/urbanv
 
 mongoose.connect(MONGODB_URI)
     .then(() => {
-        console.log('✅ MongoDB Connected');
+        console.log('✅ DATABASE: MongoDB Connected Successfully');
         app.listen(PORT, () => {
-            console.log(`🚀 Server running on port ${PORT}`);
+            console.log(`🚀 SERVER: Running on http://localhost:${PORT}`);
+            console.log(`📡 API: Auth and Venue routes are active`);
         });
     })
     .catch(err => {
-        console.error('❌ MongoDB Connection Error:', err.message);
+        console.error('❌ ERROR: Database connection failed!');
+        console.error('Check your .env MONGODB_URI and IP Whitelist.');
+        console.error(err.message);
     });
