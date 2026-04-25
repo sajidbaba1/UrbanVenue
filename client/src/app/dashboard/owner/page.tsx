@@ -27,30 +27,37 @@ export default function OwnerDashboard() {
   const { user, logout } = useAuth();
   const router = useRouter();
   const [venues, setVenues] = useState<any[]>([]);
+  const [stats, setStats] = useState({ totalVenues: 0, newBookings: 0, avgRating: 0, estRevenue: 0 });
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('venues');
 
-  // Handle Logout
-  const handleLogout = () => {
-    logout();
-    router.push('/');
-  };
-
   useEffect(() => {
-    const fetchVenues = async () => {
+    const fetchData = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/api/venues');
-        const myVenues = res.data.filter((v: any) => v.owner?._id === user?.id || v.owner === user?.id);
+        const [venuesRes, statsRes] = await Promise.all([
+            axios.get('http://localhost:5000/api/venues'),
+            axios.get('http://localhost:5000/api/venues/stats/owner')
+        ]);
+
+        const myVenues = venuesRes.data.filter((v: any) => v.owner?._id === user?.id || v.owner === user?.id);
         setVenues(myVenues);
+        setStats(statsRes.data);
       } catch (err) {
-        console.error('Error fetching venues', err);
+        console.error('Error fetching dashboard data', err);
       } finally {
         setLoading(false);
       }
     };
 
-    if (user) fetchVenues();
+    if (user) fetchData();
   }, [user]);
+
+  const statConfig = [
+    { label: 'Active Venues', value: stats.totalVenues, icon: <Building2 />, color: 'text-indigo-500' },
+    { label: 'New Bookings', value: stats.newBookings, icon: <Clock />, color: 'text-amber-500' },
+    { label: 'Avg Rating', value: stats.avgRating, icon: <Star />, color: 'text-rose-500' },
+    { label: 'Est. Revenue', value: `₹${stats.estRevenue.toLocaleString()}`, icon: <BarChart3 />, color: 'text-emerald-500' },
+  ];
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white">
@@ -119,12 +126,7 @@ export default function OwnerDashboard() {
         <main className="p-8">
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
-            {[
-              { label: 'Active Venues', value: venues.length, icon: <Building2 />, color: 'text-indigo-500' },
-              { label: 'New Bookings', value: '4', icon: <Clock />, color: 'text-amber-500' },
-              { label: 'Avg Rating', value: '4.9', icon: <Star />, color: 'text-rose-500' },
-              { label: 'Est. Revenue', value: '₹1.2L', icon: <BarChart3 />, color: 'text-emerald-500' },
-            ].map((stat, i) => (
+            {statConfig.map((stat, i) => (
               <div key={i} className="p-8 rounded-[32px] bg-neutral-900 border border-white/5 relative overflow-hidden group">
                 <div className={`${stat.color} mb-4`}>{stat.icon}</div>
                 <div className="text-3xl font-black mb-1">{stat.value}</div>

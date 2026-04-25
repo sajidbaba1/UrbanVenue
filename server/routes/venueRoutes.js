@@ -1,7 +1,45 @@
-const express = require('express');
 const Venue = require('../models/Venue');
+const Booking = require('../models/Booking');
 const { auth, authorize } = require('../middleware/auth');
 const router = express.Router();
+
+// Get Owner Dashboard Stats
+router.get('/stats/owner', auth, authorize('owner'), async (req, res) => {
+    try {
+        const myVenues = await Venue.find({ owner: req.user.id });
+        const venueIds = myVenues.map(v => v._id);
+
+        const totalVenues = myVenues.length;
+        
+        // Count Pending Bookings
+        const newBookings = await Booking.countDocuments({ 
+            venue: { $in: venueIds }, 
+            status: 'pending_approval' 
+        });
+
+        // Calculate Avg Rating
+        const avgRating = myVenues.length > 0 
+            ? (myVenues.reduce((acc, curr) => acc + (curr.rating || 0), 0) / myVenues.length).toFixed(1)
+            : 0;
+
+        // Calculate Revenue from PAID bookings
+        const financials = await Booking.aggregate([
+            { $match: { venue: { $in: venueIds }, paymentStatus: 'paid' } },
+            { $group: { _id: null, total: { $sum: '$ownerAmount' } } }
+        ]);
+
+        const estRevenue = financials.length > 0 ? financials[0].total : 0;
+
+        res.json({
+            totalVenues,
+            newBookings,
+            avgRating,
+            estRevenue
+        });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
 
 // Get all verified venues
 router.get('/', async (req, res) => {
