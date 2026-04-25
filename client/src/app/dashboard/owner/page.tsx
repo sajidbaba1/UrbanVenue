@@ -26,6 +26,13 @@ import { useRouter } from 'next/navigation';
 export default function OwnerDashboard() {
   const { user, logout } = useAuth();
   const router = useRouter();
+  
+  // Handle Logout
+  const handleLogout = () => {
+    logout();
+    router.push('/');
+  };
+
   const [venues, setVenues] = useState<any[]>([]);
   const [stats, setStats] = useState({ totalVenues: 0, newBookings: 0, avgRating: 0, estRevenue: 0 });
   const [loading, setLoading] = useState(true);
