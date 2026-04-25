@@ -22,6 +22,7 @@ app.get('/', (req, res) => {
 try {
     app.use('/api/auth', require('./routes/authRoutes'));
     app.use('/api/venues', require('./routes/venueRoutes'));
+    app.use('/api/admin', require('./routes/adminRoutes'));
 } catch (error) {
     console.error('❌ ROUTE LOADING ERROR:', error.message);
 }
