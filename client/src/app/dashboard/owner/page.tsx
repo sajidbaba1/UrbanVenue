@@ -41,9 +41,12 @@ export default function OwnerDashboard() {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        const token = localStorage.getItem('token');
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        
         const [venuesRes, statsRes] = await Promise.all([
             axios.get('http://localhost:5000/api/venues'),
-            axios.get('http://localhost:5000/api/venues/stats/owner')
+            axios.get('http://localhost:5000/api/venues/stats/owner', config)
         ]);
 
         const myVenues = venuesRes.data.filter((v: any) => v.owner?._id === user?.id || v.owner === user?.id);

@@ -60,7 +60,13 @@ export default function AddVenuePage() {
     e.preventDefault();
     setLoading(true);
     try {
-      await axios.post('http://localhost:5000/api/venues', formData);
+      const token = localStorage.getItem('token');
+      const res = await axios.post('http://localhost:5000/api/venues', formData, {
+        headers: {
+            Authorization: `Bearer ${token}`
+        }
+      });
+      alert('Venue created successfully!');
       router.push('/dashboard/owner');
     } catch (err) {
       console.error('Failed to create venue', err);
