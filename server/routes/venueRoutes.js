@@ -1,3 +1,4 @@
+const express = require('express');
 const Venue = require('../models/Venue');
 const Booking = require('../models/Booking');
 const { auth, authorize } = require('../middleware/auth');
