@@ -27,7 +27,11 @@ export default function LoginPage() {
     try {
       const res = await axios.post('http://localhost:5000/api/auth/login', formData);
       login(res.data.token, res.data.user);
-      router.push(res.data.user.role === 'owner' ? '/dashboard/owner' : '/dashboard/user');
+      
+      const role = res.data.user.role;
+      if (role === 'admin') router.push('/dashboard/admin/users');
+      else if (role === 'owner') router.push('/dashboard/owner');
+      else router.push('/dashboard/user');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Login failed');
     } finally {
