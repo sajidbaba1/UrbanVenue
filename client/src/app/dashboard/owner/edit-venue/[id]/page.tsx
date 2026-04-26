@@ -22,6 +22,7 @@ import {
   Loader2
 } from 'lucide-react';
 import Link from 'next/link';
+import { toast } from 'react-toastify';
 
 export default function EditVenuePage() {
   const router = useRouter();
@@ -142,11 +143,11 @@ export default function EditVenuePage() {
         }
       });
 
-      alert('Venue updated successfully!');
+      toast.success('Venue updated successfully!');
       router.push('/dashboard/owner');
     } catch (err: any) {
       console.error('Failed to update venue', err);
-      alert('Error updating venue.');
+      toast.error('Encryption Error: Failed to save changes');
     } finally {
       setSaving(false);
     }

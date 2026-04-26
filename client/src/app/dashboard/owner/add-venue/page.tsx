@@ -107,12 +107,12 @@ export default function AddVenuePage() {
         }
       });
 
-      alert('Venue created successfully!');
+      toast.success('Property published! Waiting for admin approval.');
       router.push('/dashboard/owner');
     } catch (err: any) {
       console.error('Failed to create venue', err);
       const msg = err.response?.data?.message || 'Error creating venue.';
-      alert(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

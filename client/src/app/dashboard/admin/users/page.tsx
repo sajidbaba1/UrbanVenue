@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
+import { toast } from 'react-toastify';
 
 export default function AdminDashboard() {
   const { user, logout } = useAuth();
@@ -56,6 +57,7 @@ export default function AdminDashboard() {
       setVenues(venuesRes.data);
     } catch (err) {
       console.error('Failed to fetch platform data', err);
+      toast.error('Network Error: Could not sync platform data');
     } finally {
       setLoading(false);
     }
@@ -71,10 +73,10 @@ export default function AdminDashboard() {
       await axios.put(`http://localhost:5000/api/admin/venues/${id}/verify`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      alert('Approved! Venue is now live for all customers.');
+      toast.success('Approved! Venue is now live.');
       fetchData();
     } catch (err) {
-      alert('Failed to approve venue');
+      toast.error('Approval failed. Check permissions.');
     }
   };
 
@@ -85,9 +87,10 @@ export default function AdminDashboard() {
        await axios.delete(`http://localhost:5000/api/venues/${id}`, {
          headers: { Authorization: `Bearer ${token}` }
        });
+       toast.success('Venue listing purged.');
        fetchData();
      } catch (err) {
-       alert('Failed to delete venue');
+       toast.error('Critical: Failed to remove venue.');
      }
   };
 
@@ -99,8 +102,9 @@ export default function AdminDashboard() {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUsers(users.filter(u => u._id !== id));
+      toast.success('Account deleted successfully.');
     } catch (err) {
-      alert('Failed to delete user');
+      toast.error('Failed to purge user account.');
     }
   };
 
@@ -112,11 +116,11 @@ export default function AdminDashboard() {
         { newPassword },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      alert('Success: User credentials recovered.');
+      toast.success('Success: User credentials recovered.');
       setSelectedUser(null);
       setNewPassword('');
     } catch (err) {
-      alert('Failed to update password');
+      toast.error('Security override failed.');
     }
   };
 
