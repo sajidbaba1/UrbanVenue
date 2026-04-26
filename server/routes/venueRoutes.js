@@ -63,8 +63,10 @@ router.get('/:id', async (req, res) => {
     }
 });
 
+const upload = require('../middleware/upload');
+
 // Create Venue (Owner Only)
-router.post('/', auth, authorize('owner', 'admin'), async (req, res) => {
+router.post('/', auth, authorize('owner', 'admin'), upload.array('images', 5), async (req, res) => {
     try {
         console.log('📥 INCOMING VENUE DATA:', req.body);
         
@@ -73,17 +75,24 @@ router.post('/', auth, authorize('owner', 'admin'), async (req, res) => {
             pricePerHour, type, amenities, addons 
         } = req.body;
 
+        // Parse JSON strings from FormData if they exist
+        const parsedAmenities = typeof amenities === 'string' ? JSON.parse(amenities) : amenities;
+        const parsedAddons = typeof addons === 'string' ? JSON.parse(addons) : addons;
+
+        const imagePaths = req.files ? req.files.map(file => file.path) : [];
+
         const venue = new Venue({
             owner: req.user.id,
             name,
             description,
             location,
             address,
-            capacity: Number(capacity), // Ensure Number
-            pricePerHour: Number(pricePerHour), // Ensure Number
+            capacity: Number(capacity),
+            pricePerHour: Number(pricePerHour),
             type,
-            amenities,
-            addons,
+            amenities: parsedAmenities,
+            addons: parsedAddons,
+            images: imagePaths,
             isVerified: req.user.role === 'admin'
         });
 
