@@ -38,4 +38,30 @@ router.put('/users/:id/password', auth, authorize('admin'), async (req, res) => 
     }
 });
 
+const Venue = require('../models/Venue');
+
+// 🔒 RESTRICTED: Get all venues for auditing
+router.get('/venues', auth, authorize('admin'), async (req, res) => {
+    try {
+        const venues = await Venue.find().populate('owner', 'name email');
+        res.json(venues);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// 🔒 RESTRICTED: Approve/Verify a venue
+router.put('/venues/:id/verify', auth, authorize('admin'), async (req, res) => {
+    try {
+        const venue = await Venue.findByIdAndUpdate(
+            req.params.id, 
+            { isVerified: true }, 
+            { new: true }
+        );
+        res.json({ message: 'Venue approved successfully', venue });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
 module.exports = router;

@@ -1,61 +1,98 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import Link from 'next/link';
+import axios from 'axios';
 import { 
   Users, 
+  Settings, 
   Trash2, 
-  Key, 
-  Search, 
+  LogOut, 
   Shield, 
-  Mail, 
-  Loader2, 
-  X,
-  LogOut,
-  Settings,
+  Search,
+  Star,
   Zap,
-  Star
+  ShieldCheck,
+  Building2,
+  MapPin,
+  Loader2,
+  X,
+  Key
 } from 'lucide-react';
+import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'next/navigation';
 
 export default function AdminDashboard() {
   const { user, logout } = useAuth();
   const router = useRouter();
   const [users, setUsers] = useState<any[]>([]);
+  const [venues, setVenues] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('venues');
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // States for user password reset modal
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [newPassword, setNewPassword] = useState('');
 
-  // Handle Logout
   const handleLogout = () => {
     logout();
     router.push('/');
   };
 
-  const fetchUsers = async () => {
+  const fetchData = async () => {
+    setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get('http://localhost:5000/api/admin/users', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setUsers(res.data);
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      
+      const [usersRes, venuesRes] = await Promise.all([
+        axios.get('http://localhost:5000/api/admin/users', config),
+        axios.get('http://localhost:5000/api/admin/venues', config)
+      ]);
+      
+      setUsers(usersRes.data);
+      setVenues(venuesRes.data);
     } catch (err) {
-      console.error('Failed to fetch users', err);
+      console.error('Failed to fetch platform data', err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchUsers();
+    fetchData();
   }, []);
 
+  const verifyVenue = async (id: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(`http://localhost:5000/api/admin/venues/${id}/verify`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      alert('Approved! Venue is now live for all customers.');
+      fetchData();
+    } catch (err) {
+      alert('Failed to approve venue');
+    }
+  };
+
+  const deleteVenue = async (id: string) => {
+     if (!window.confirm('Permanently delete this venue listing?')) return;
+     try {
+       const token = localStorage.getItem('token');
+       await axios.delete(`http://localhost:5000/api/venues/${id}`, {
+         headers: { Authorization: `Bearer ${token}` }
+       });
+       fetchData();
+     } catch (err) {
+       alert('Failed to delete venue');
+     }
+  };
+
   const deleteUser = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this user? Action cannot be undone.')) return;
+    if (!window.confirm('Delete user profile? This cannot be undone.')) return;
     try {
       const token = localStorage.getItem('token');
       await axios.delete(`http://localhost:5000/api/admin/users/${id}`, {
@@ -67,7 +104,7 @@ export default function AdminDashboard() {
     }
   };
 
-  const updatePassword = async (e: React.FormEvent) => {
+  const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
@@ -75,7 +112,7 @@ export default function AdminDashboard() {
         { newPassword },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      alert('Password updated successfully');
+      alert('Success: User credentials recovered.');
       setSelectedUser(null);
       setNewPassword('');
     } catch (err) {
@@ -83,195 +120,239 @@ export default function AdminDashboard() {
     }
   };
 
+  const pendingVenues = venues.filter(v => !v.isVerified);
+  const activeVenues = venues.filter(v => v.isVerified);
+
   const filteredUsers = users.filter(u => 
-    u.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    u.email.toLowerCase().includes(searchTerm.toLowerCase())
+    u.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    u.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-white">
-      {/* Side Navigation (Cleaned) */}
-      <div className="fixed left-0 top-0 h-full w-20 md:w-64 bg-neutral-900 border-r border-white/5 flex flex-col justify-between p-4 z-50">
+    <div className="min-h-screen bg-neutral-950 text-white flex">
+      {/* Universal Side Navigation */}
+      <div className="fixed left-0 top-0 h-full w-64 bg-neutral-900 border-r border-white/5 flex flex-col justify-between p-6 z-50">
         <div>
-          <Link href="/" className="flex items-center gap-2 mb-12 px-2">
-            <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center">
-              <Zap size={20} fill="currentColor" />
+          <div className="flex items-center gap-3 mb-12 px-2">
+            <div className="w-10 h-10 bg-rose-600 rounded-xl flex items-center justify-center shadow-lg shadow-rose-600/20">
+              <Shield size={22} className="text-white" />
             </div>
-            <span className="hidden md:block text-xl font-bold tracking-tight">UrbanVenue</span>
-          </Link>
+            <span className="text-xl font-black tracking-tight uppercase italic">UrbanAdmin</span>
+          </div>
 
           <div className="space-y-2">
-            <button className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl bg-rose-600 text-white shadow-xl shadow-rose-600/20">
-              <Users />
-              <span className="hidden md:block font-bold text-sm">User Directory</span>
-            </button>
-            <button className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl text-neutral-500 hover:bg-white/5 hover:text-white transition-all">
-              <Settings />
-              <span className="hidden md:block font-bold text-sm">Settings</span>
-            </button>
+            {[
+              { id: 'venues', label: 'Pending Approvals', icon: <Building2 size={20} />, count: pendingVenues.length },
+              { id: 'users', label: 'User Directory', icon: <Users size={20} /> },
+              { id: 'settings', label: 'Platform Settings', icon: <Settings size={20} /> },
+            ].map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id)}
+                className={`w-full flex items-center justify-between px-4 py-4 rounded-2xl transition-all ${
+                  activeTab === item.id 
+                  ? 'bg-rose-600 text-white shadow-xl shadow-rose-600/20' 
+                  : 'text-neutral-500 hover:bg-white/5 hover:text-white'
+                }`}
+              >
+                <div className="flex items-center gap-4">
+                  {item.icon}
+                  <span className="font-bold text-sm tracking-tight">{item.label}</span>
+                </div>
+                {item.count ? (
+                  <span className="w-6 h-6 bg-white text-rose-600 rounded-full flex items-center justify-center text-[10px] font-black">
+                    {item.count}
+                  </span>
+                ) : null}
+              </button>
+            ))}
           </div>
         </div>
 
         <button 
           onClick={handleLogout}
-          className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl text-red-500 hover:bg-red-500/10 transition-all font-bold text-sm"
+          className="w-full flex items-center gap-4 px-4 py-4 rounded-2xl text-red-500 hover:bg-red-500/10 transition-all font-black text-sm"
         >
           <LogOut size={20} />
-          <span className="hidden md:block">Logout</span>
+          Sign Out
         </button>
       </div>
 
-      {/* Main Content Area */}
-      <div className="pl-20 md:pl-64">
-        <header className="h-20 border-b border-white/5 flex items-center justify-between px-8 bg-neutral-950/50 backdrop-blur-xl sticky top-0 z-40">
-          <div className="flex items-center gap-4">
-             <div className="w-10 h-10 rounded-full bg-rose-600/20 flex items-center justify-center text-rose-500 border border-rose-500/30">
-               <Shield size={20} />
-             </div>
-             <div>
-               <div className="text-sm font-bold">Admin: {user?.name}</div>
-               <div className="text-[10px] text-neutral-500 uppercase tracking-widest font-black">Management Mode</div>
-             </div>
-          </div>
+      <div className="flex-1 ml-64">
+        {/* Top Header */}
+        <header className="h-24 sticky top-0 bg-neutral-950/80 backdrop-blur-xl border-b border-white/5 z-40 px-10 flex items-center justify-between">
+           <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-rose-600/10 border border-rose-500/20 flex items-center justify-center text-rose-500 shadow-xl">
+                 <ShieldCheck size={24} />
+              </div>
+              <div>
+                 <h1 className="text-sm font-black uppercase tracking-widest text-neutral-500">Admin Control</h1>
+                 <p className="font-bold text-white tracking-tight">{user?.name}</p>
+              </div>
+           </div>
 
-          <div className="relative group hidden md:block">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 group-focus-within:text-rose-500 transition-colors" size={16} />
-            <input 
-              type="text" 
-              placeholder="Quick search users..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-white/5 border border-white/10 rounded-full py-2.5 pl-12 pr-6 outline-none focus:border-rose-600 transition-all w-80 text-sm"
-            />
-          </div>
+           <div className="relative group">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-600 group-focus-within:text-rose-500 transition-colors" size={16} />
+              <input 
+                type="text" 
+                placeholder="Search resources..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="bg-neutral-900 border border-white/5 rounded-2xl py-3 pl-12 pr-6 outline-none focus:border-rose-600 transition-all w-80 text-xs font-bold"
+              />
+           </div>
         </header>
 
-        <main className="p-8">
-          {/* Core Stats Only */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-            <div className="p-8 rounded-[32px] bg-neutral-900 border border-white/5 flex items-center justify-between group">
-              <div>
-                <div className="text-3xl font-black mb-1">{users.length}</div>
-                <div className="text-xs font-bold text-neutral-500 uppercase tracking-widest">Total Active Users</div>
-              </div>
-              <div className="w-14 h-14 bg-indigo-600/10 rounded-2xl flex items-center justify-center text-indigo-500">
-                <Users size={24} />
-              </div>
-            </div>
-            
-            <div className="p-8 rounded-[32px] bg-neutral-900 border border-white/5 flex items-center justify-between group">
-              <div>
-                <div className="text-3xl font-black mb-1">4.8</div>
-                <div className="text-xs font-bold text-neutral-500 uppercase tracking-widest">Platform Rating</div>
-              </div>
-              <div className="w-14 h-14 bg-amber-600/10 rounded-2xl flex items-center justify-center text-amber-500">
-                <Star size={24} fill="currentColor" />
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-2xl font-bold uppercase tracking-tighter italic">Platform User Directory</h2>
-          </div>
-
-          {/* User List Implementation */}
-          <div className="grid grid-cols-1 gap-4">
-            {loading ? (
-              <div className="flex items-center justify-center py-20">
-                <Loader2 className="animate-spin text-rose-500" size={40} />
-              </div>
-            ) : filteredUsers.map((u) => (
-              <motion.div 
-                layout
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                key={u._id}
-                className="group bg-neutral-900 border border-white/5 rounded-[40px] p-6 hover:border-white/20 transition-all flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xl shadow-black/50"
-              >
-                <div className="flex items-center gap-6 w-full">
-                  <div className="w-16 h-16 rounded-full bg-rose-600/10 flex items-center justify-center text-rose-400 font-black text-2xl border border-rose-500/20 shadow-inner">
-                    {u.name.charAt(0)}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xl font-bold">{u.name}</span>
-                      <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                        u.role === 'admin' ? 'bg-rose-500/20 text-rose-500 border border-rose-500/30' : 
-                        u.role === 'owner' ? 'bg-indigo-600/20 text-indigo-500 border border-indigo-500/30' : 'bg-neutral-800 text-neutral-400'
-                      }`}>
-                        {u.role}
-                      </span>
+        <main className="p-10">
+          <AnimatePresence mode='wait'>
+            {activeTab === 'venues' ? (
+              <motion.div key="venues" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-10">
+                 <div className="flex items-end justify-between">
+                    <div>
+                       <h2 className="text-4xl font-black italic tracking-tighter uppercase mb-2">Audit Queue</h2>
+                       <p className="text-neutral-500 text-sm font-bold">{pendingVenues.length} properties awaiting verification</p>
                     </div>
-                    <div className="flex items-center gap-2 text-neutral-500 text-sm italic">
-                      <Mail size={14} />
-                      {u.email}
-                    </div>
-                  </div>
-                </div>
+                 </div>
 
-                <div className="flex items-center gap-3 w-full md:w-auto">
-                  <button 
-                    onClick={() => setSelectedUser(u)}
-                    className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-sm font-bold"
-                  >
-                    <Key size={16} />
-                    Reset
-                  </button>
-                  <button 
-                    onClick={() => deleteUser(u._id)}
-                    className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-red-500/10 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all text-red-500 text-sm font-bold"
-                  >
-                    <Trash2 size={16} />
-                    Delete
-                  </button>
-                </div>
+                 <div className="grid grid-cols-1 gap-6">
+                    {pendingVenues.map((v) => (
+                      <div key={v._id} className="bg-neutral-900 border border-white/5 rounded-[40px] p-8 flex items-center justify-between group hover:border-white/20 transition-all">
+                         <div className="flex items-center gap-8">
+                            <div className="w-28 h-28 rounded-3xl bg-neutral-800 overflow-hidden border border-white/5 relative group">
+                               {v.images?.[0] ? (
+                                 <img src={v.images[0]} className="w-full h-full object-cover" />
+                               ) : (
+                                 <div className="w-full h-full flex items-center justify-center text-neutral-600 italic text-[10px]">No Thumbnail</div>
+                               )}
+                            </div>
+                            <div>
+                               <div className="flex items-center gap-3 mb-2">
+                                  <h3 className="text-2xl font-black">{v.name}</h3>
+                                  <span className="px-3 py-1 rounded-full bg-indigo-600/10 text-indigo-400 text-[8px] font-black uppercase tracking-widest border border-indigo-500/20">{v.type}</span>
+                               </div>
+                               <div className="flex gap-6">
+                                  <div className="flex items-center gap-2 text-neutral-500 text-xs font-bold">
+                                     <MapPin size={14} className="text-rose-600" />
+                                     {v.location}
+                                  </div>
+                                  <div className="flex items-center gap-2 text-neutral-500 text-xs font-bold italic">
+                                     Owner: <span className="text-white underline">{v.owner?.name || 'Anonymous'}</span>
+                                  </div>
+                               </div>
+                            </div>
+                         </div>
+
+                         <div className="flex gap-4">
+                            <button 
+                              onClick={() => verifyVenue(v._id)}
+                              className="px-8 py-4 bg-white text-black hover:bg-emerald-500 hover:text-white rounded-2xl font-black transition-all flex items-center gap-2"
+                            >
+                               <ShieldCheck size={18} />
+                               Approve
+                            </button>
+                            <button 
+                              onClick={() => deleteVenue(v._id)}
+                              className="w-14 h-14 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white rounded-2xl flex items-center justify-center transition-all border border-red-500/10"
+                            >
+                               <Trash2 size={20} />
+                            </button>
+                         </div>
+                      </div>
+                    ))}
+
+                    {pendingVenues.length === 0 && (
+                      <div className="py-40 text-center bg-white/5 rounded-[60px] border border-dashed border-white/10">
+                         <Star size={40} className="mx-auto mb-4 text-neutral-700" />
+                         <h3 className="text-xl font-bold text-neutral-500 italic">Global Queue Cleared</h3>
+                      </div>
+                    )}
+                 </div>
               </motion.div>
-            ))}
-          </div>
+            ) : (
+              <motion.div key="users" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="space-y-8">
+                 <div className="flex items-end justify-between">
+                    <h2 className="text-4xl font-black italic tracking-tighter uppercase">Account Directory</h2>
+                 </div>
+
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {filteredUsers.map((u) => (
+                      <div key={u._id} className="bg-neutral-900 border border-white/5 p-8 rounded-[32px] flex items-center justify-between group hover:border-white/10 transition-all shadow-2xl">
+                         <div className="flex items-center gap-5">
+                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-black ${
+                              u.role === 'admin' ? 'bg-rose-600/20 text-rose-500' : 
+                              u.role === 'owner' ? 'bg-indigo-600/20 text-indigo-500' : 'bg-emerald-600/20 text-emerald-500'
+                            }`}>
+                               {u.name?.[0].toUpperCase()}
+                            </div>
+                            <div>
+                               <h3 className="font-bold flex items-center gap-2">
+                                  {u.name}
+                                  {u.role === 'admin' && <Shield size={12} className="text-rose-500" />}
+                               </h3>
+                               <p className="text-xs text-neutral-500 font-medium">{u.email}</p>
+                            </div>
+                         </div>
+                         <div className="flex gap-2">
+                            <button 
+                              onClick={() => setSelectedUser(u)}
+                              className="w-10 h-10 bg-white/5 hover:bg-indigo-600 hover:text-white text-neutral-500 rounded-xl flex items-center justify-center transition-all"
+                            >
+                               <Key size={16} />
+                            </button>
+                            {u.role !== 'admin' && (
+                              <button 
+                                onClick={() => deleteUser(u._id)}
+                                className="w-10 h-10 bg-white/5 hover:bg-red-500 hover:text-white text-neutral-500 rounded-xl flex items-center justify-center transition-all"
+                              >
+                                 <Trash2 size={16} />
+                              </button>
+                            )}
+                         </div>
+                      </div>
+                    ))}
+                 </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </main>
       </div>
 
-      {/* Emergency Reset Modal */}
+      {/* Password Reset Modal (Recovered) */}
       <AnimatePresence>
         {selectedUser && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
-            <motion.div 
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={() => setSelectedUser(null)}
-              className="absolute inset-0 bg-black/80 backdrop-blur-md" 
-            />
-            <motion.div 
-              initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }}
-              className="relative bg-neutral-900 border border-white/10 w-full max-w-md rounded-[50px] p-12 shadow-2xl overflow-hidden"
-            >
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-48 bg-rose-600/10 blur-[80px] -z-10" />
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setSelectedUser(null)} />
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-neutral-900 border border-white/10 p-10 rounded-[40px] w-full max-w-md relative z-10 shadow-2xl">
+              <h2 className="text-2xl font-black mb-2 italic uppercase tracking-tighter">Emergency Override</h2>
+              <p className="text-neutral-500 text-sm mb-8 font-bold">Resetting credentials for <span className="text-rose-500">{selectedUser.name}</span></p>
               
-              <button onClick={() => setSelectedUser(null)} className="absolute top-8 right-8 text-neutral-500 hover:text-white">
-                  <X size={28} />
-              </button>
-
-              <h3 className="text-3xl font-black mb-2 italic uppercase tracking-tighter">Force Reset</h3>
-              <p className="text-neutral-500 text-sm mb-10 leading-relaxed">
-                Updating credentials for <span className="text-white font-bold">{selectedUser.name}</span>.
-              </p>
-
-              <form onSubmit={updatePassword} className="space-y-6">
-                <input 
-                  type="password" 
-                  required
-                  placeholder="New Administrative Password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-[24px] py-5 px-8 outline-none focus:border-rose-600 transition-all font-medium"
-                />
-                <button type="submit" className="w-full h-16 bg-rose-600 text-white rounded-[24px] font-black hover:bg-rose-500 transition-all shadow-xl shadow-rose-600/30 active:scale-95 text-lg uppercase">
-                  Confirm Override
+              <form onSubmit={handleUpdatePassword} className="space-y-6">
+                <div className="space-y-2">
+                   <label className="text-[10px] font-black text-neutral-500 uppercase tracking-widest pl-1">New Administrative Password</label>
+                   <input 
+                    type="password" 
+                    required 
+                    placeholder="Enter Secure Password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="w-full bg-black/50 border border-white/5 rounded-2xl p-4 outline-none focus:border-rose-600 transition-all font-bold"
+                  />
+                </div>
+                <button type="submit" className="w-full bg-rose-600 py-4 rounded-2xl font-black text-sm shadow-xl shadow-rose-600/20 active:scale-95 transition-all">
+                  AUTHORIZE RESET
                 </button>
               </form>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
+
+      {/* Loading Overlay */}
+      {loading && (
+        <div className="fixed inset-0 bg-neutral-950/50 backdrop-blur-sm z-[200] flex items-center justify-center">
+           <Loader2 className="animate-spin text-rose-600" size={48} />
+        </div>
+      )}
     </div>
   );
 }

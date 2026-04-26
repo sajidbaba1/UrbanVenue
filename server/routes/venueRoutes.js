@@ -42,10 +42,20 @@ router.get('/stats/owner', auth, authorize('owner'), async (req, res) => {
     }
 });
 
-// Get all venues
+// Get my venues (Owner only)
+router.get('/my', auth, authorize('owner', 'admin'), async (req, res) => {
+    try {
+        const venues = await Venue.find({ owner: req.user.id });
+        res.json(venues);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// Get all verified venues
 router.get('/', async (req, res) => {
     try {
-        const venues = await Venue.find().populate('owner', 'name');
+        const venues = await Venue.find({ isVerified: true }).populate('owner', 'name');
         res.json(venues);
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -112,18 +122,51 @@ router.post('/', auth, authorize('owner', 'admin'), upload.array('images', 5), a
     }
 });
 
-// Update Venue
-router.put('/:id', auth, async (req, res) => {
+// Update Venue (Owner/Admin Only)
+router.put('/:id', auth, authorize('owner', 'admin'), upload.array('images', 5), async (req, res) => {
     try {
         let venue = await Venue.findById(req.params.id);
         if (!venue) return res.status(404).json({ message: 'Venue not found' });
 
-        // Check if owner
+        // Check ownership
         if (venue.owner.toString() !== req.user.id && req.user.role !== 'admin') {
-            return res.status(401).json({ message: 'Not authorized' });
+            return res.status(403).json({ message: 'Not authorized' });
         }
 
-        venue = await Venue.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const { 
+            name, description, location, address, capacity, 
+            pricePerHour, type, amenities, addons, existingImages 
+        } = req.body;
+
+        // Secure JSON Parsing
+        let parsedAmenities = [];
+        let parsedAddons = [];
+        let parsedExistingImages = [];
+        try {
+            if (amenities) parsedAmenities = typeof amenities === 'string' ? JSON.parse(amenities) : (amenities || []);
+            if (addons) parsedAddons = typeof addons === 'string' ? JSON.parse(addons) : (addons || []);
+            if (existingImages) parsedExistingImages = typeof existingImages === 'string' ? JSON.parse(existingImages) : (existingImages || []);
+        } catch (e) {
+            return res.status(400).json({ message: 'Invalid format for amenities, addons or images' });
+        }
+
+        const newImagePaths = req.files ? req.files.map(file => file.path) : [];
+        const finalImages = [...parsedExistingImages, ...newImagePaths].slice(0, 5);
+
+        const updates = {
+            name,
+            description,
+            location,
+            address,
+            capacity: Number(capacity) || venue.capacity,
+            pricePerHour: Number(pricePerHour) || venue.pricePerHour,
+            type,
+            amenities: parsedAmenities,
+            addons: parsedAddons,
+            images: finalImages
+        };
+
+        venue = await Venue.findByIdAndUpdate(req.params.id, updates, { new: true });
         res.json(venue);
     } catch (err) {
         res.status(500).json({ message: err.message });
