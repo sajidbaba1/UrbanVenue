@@ -42,10 +42,10 @@ router.get('/stats/owner', auth, authorize('owner'), async (req, res) => {
     }
 });
 
-// Get all verified venues
+// Get all venues
 router.get('/', async (req, res) => {
     try {
-        const venues = await Venue.find({ isVerified: true }).populate('owner', 'name');
+        const venues = await Venue.find().populate('owner', 'name');
         res.json(venues);
     } catch (err) {
         res.status(500).json({ message: err.message });
@@ -75,9 +75,16 @@ router.post('/', auth, authorize('owner', 'admin'), upload.array('images', 5), a
             pricePerHour, type, amenities, addons 
         } = req.body;
 
-        // Parse JSON strings from FormData if they exist
-        const parsedAmenities = typeof amenities === 'string' ? JSON.parse(amenities) : amenities;
-        const parsedAddons = typeof addons === 'string' ? JSON.parse(addons) : addons;
+        // Secure JSON Parsing
+        let parsedAmenities = [];
+        let parsedAddons = [];
+        try {
+            parsedAmenities = typeof amenities === 'string' ? JSON.parse(amenities) : (amenities || []);
+            parsedAddons = typeof addons === 'string' ? JSON.parse(addons) : (addons || []);
+        } catch (e) {
+            console.error('❌ JSON PARSE ERROR:', e.message);
+            return res.status(400).json({ message: 'Invalid format for amenities or addons' });
+        }
 
         const imagePaths = req.files ? req.files.map(file => file.path) : [];
 
@@ -87,8 +94,8 @@ router.post('/', auth, authorize('owner', 'admin'), upload.array('images', 5), a
             description,
             location,
             address,
-            capacity: Number(capacity),
-            pricePerHour: Number(pricePerHour),
+            capacity: Number(capacity) || 0,
+            pricePerHour: Number(pricePerHour) || 0,
             type,
             amenities: parsedAmenities,
             addons: parsedAddons,

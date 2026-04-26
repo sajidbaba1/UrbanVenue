@@ -35,6 +35,15 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log('====================================');
 });
 
+// Final Error Handler
+app.use((err, req, res, next) => {
+    console.error('🔥 GLOBAL ERROR:', err.message);
+    res.status(err.status || 500).json({
+        message: err.message || 'An unexpected server error occurred',
+        error: process.env.NODE_ENV === 'development' ? err : {}
+    });
+});
+
 // 🍃 Connect to Database
 if (MONGODB_URI) {
     mongoose.connect(MONGODB_URI)
